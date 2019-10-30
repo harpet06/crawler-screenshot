@@ -9,19 +9,17 @@ let pagesVisited = {};
 let numPagesVisited = 0;
 let pagesToVisit = [];
 let url = new URL(baseUrl);
-baseUrl = url.protocol + "//" + url.hostname;
+baseUrl = `${url.protocol}//${url.hostname}`;
 
 const crawl = () => {
   if (numPagesVisited >= maxPagesToVisit) {
     console.log("Reached max limit of number of pages to visit.");
     return;
   }
-  var nextPage = pagesToVisit.pop();
+  let nextPage = pagesToVisit.pop();
   if (nextPage in pagesVisited) {
-    // We've already visited this page, so repeat the crawl
     crawl();
   } else {
-    // New page we haven't visited
     visitPage(nextPage, crawl);
   }
 };
@@ -40,7 +38,7 @@ const visitPage = (url, callback) => {
         return;
       }
 
-      var $ = cheerio.load(body);
+      let $ = cheerio.load(body);
 
       collectInternalLinks($);
       callback();
@@ -51,7 +49,7 @@ const visitPage = (url, callback) => {
 };
 
 const collectInternalLinks = $ => {
-  var relativeLinks = $("a[href^='/']");
+  let relativeLinks = $("a[href^='/']");
   console.log("Found " + relativeLinks.length + " relative links on page");
 
   relativeLinks.each(function() {
