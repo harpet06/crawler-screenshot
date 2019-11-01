@@ -65,6 +65,7 @@ const crawl = async () => {
   }
   const nextPage = pagesToVisit.pop();
   if (nextPage in pagesVisited) {
+    //this seems inefficient.. 
     crawl();
   } else {
     visitPage(nextPage);
