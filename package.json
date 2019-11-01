@@ -4,9 +4,9 @@
   "description": "",
   "main": "crawler.js",
   "scripts": {
+    "lint": "eslint ./ --fix",
     "crawl": "node crawler.js"
-  }
-  ,
+  },
   "author": "",
   "license": "ISC",
   "dependencies": {
@@ -14,5 +14,10 @@
     "jest-puppeteer": "^4.3.0",
     "puppeteer": "^2.0.0",
     "url-parse": "^1.4.7"
+  },
+  "devDependencies": {
+    "eslint": "^6.6.0",
+    "eslint-config-airbnb-base": "^14.0.0",
+    "eslint-plugin-import": "^2.18.2"
   }
 }
