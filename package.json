@@ -4,8 +4,9 @@
   "description": "",
   "main": "crawler.js",
   "scripts": {
-    "test": "jest"
-  },
+    "crawl": "node crawler.js"
+  }
+  ,
   "author": "",
   "license": "ISC",
   "dependencies": {
