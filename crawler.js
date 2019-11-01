@@ -67,7 +67,7 @@ const crawl = async () => {
   if (nextPage in pagesVisited) {
     crawl();
   } else {
-    visitPage(nextPage, crawl);
+    visitPage(nextPage);
   }
 };
 
