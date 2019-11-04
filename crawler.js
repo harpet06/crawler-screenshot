@@ -1,9 +1,9 @@
-const cheerio = require("cheerio");
-const parse = require("url-parse");
-const puppeteer = require("puppeteer");
-const shuffle = require("shuffle-array");
+const cheerio = require('cheerio');
+const parse = require('url-parse');
+const puppeteer = require('puppeteer');
+const shuffle = require('shuffle-array');
 
-let baseUrl = "";
+let baseUrl = '';
 const maxPagesToVisit = 5;
 
 const pagesVisited = {};
@@ -13,7 +13,7 @@ const url = parse(baseUrl);
 let browser;
 let page;
 
-if (url.pathname === "") {
+if (url.pathname === '') {
   baseUrl = `${url.protocol}//${url.hostname}`;
 } else {
   baseUrl = `${url.href}`;
@@ -22,40 +22,40 @@ if (url.pathname === "") {
 const takeScreenshot = async (pageLink, statusCode) => {
   let urlPath = parse(pageLink);
   urlPath = urlPath.pathname;
-  urlPath = urlPath.replace(/\\|\//g, "");
+  urlPath = urlPath.replace(/\\|\//g, '');
 
   await page.screenshot({
     path: `./images/page-${urlPath}-status-${statusCode}.png`,
-    type: "png",
-    fullPage: true
+    type: 'png',
+    fullPage: true,
   });
 };
 
-const getLinks = $ => {
+const getLinks = ($) => {
   const relativeLinks = $("a[href^='/']");
   console.log(
-    `Found ${relativeLinks.length} relative links and ${absoluteLinks.length} absolute links`
+    `Found ${relativeLinks.length} relative links and ${absoluteLinks.length} absolute links`,
   );
 
   const absoluteLinks = $(`a[href^='${baseUrl}']`);
 
-  absoluteLinks.each(function() {
-    pagesToVisit.push($(this).attr("href"));
+  absoluteLinks.each(function () {
+    pagesToVisit.push($(this).attr('href'));
   });
 
-  relativeLinks.each(function() {
+  relativeLinks.each(function () {
     baseUrl = `${url.protocol}//${url.hostname}`;
-    pagesToVisit.push(baseUrl + $(this).attr("href"));
+    pagesToVisit.push(baseUrl + $(this).attr('href'));
   });
 };
 
-const visitPage = async pageLink => {
+const visitPage = async (pageLink) => {
   numPagesVisited += 1;
 
   if (pageLink) {
     const response = await page.goto(pageLink);
     if (response.status() !== 200) {
-      console.log("..do something extra");
+      console.log('..do something extra');
       await takeScreenshot(pageLink, response.status());
     }
     pagesVisited[pageLink] = response.status();
@@ -64,7 +64,7 @@ const visitPage = async pageLink => {
     getLinks($);
     crawl();
   } else {
-    console.log("No Links Found OR found all links");
+    console.log('No Links Found OR found all links');
     console.log(pagesVisited);
     await browser.close();
   }
@@ -72,7 +72,7 @@ const visitPage = async pageLink => {
 
 const crawl = async () => {
   if (numPagesVisited >= maxPagesToVisit) {
-    console.log("Reached max limit of number of pages to visit.");
+    console.log('Reached max limit of number of pages to visit.');
     await browser.close();
     console.log(pagesVisited);
     return;
@@ -95,3 +95,7 @@ const crawl = async () => {
   pagesToVisit.push(baseUrl);
   crawl();
 })();
+
+module.exports = {
+  takeScreenshot, getLinks, visitPage, crawl,
+};
