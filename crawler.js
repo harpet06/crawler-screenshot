@@ -1,77 +1,93 @@
-const cheerio = require('cheerio');
-const parse = require('url-parse');
-const puppeteer = require('puppeteer');
+const cheerio = require("cheerio");
+const parse = require("url-parse");
+const puppeteer = require("puppeteer");
+const shuffle = require("shuffle-array");
 
-let baseUrl = 'http://kettlebell-coders-app.s3-website-eu-west-1.amazonaws.com';
-const maxPagesToVisit = 8;
+let baseUrl = "";
+const maxPagesToVisit = 5;
 
 const pagesVisited = {};
 let numPagesVisited = 0;
-const pagesToVisit = [];
+let pagesToVisit = [];
 const url = parse(baseUrl);
 let browser;
 let page;
-baseUrl = `${url.protocol}//${url.hostname}`;
+
+if (url.pathname === "") {
+  baseUrl = `${url.protocol}//${url.hostname}`;
+} else {
+  baseUrl = `${url.href}`;
+}
 
 const takeScreenshot = async (pageLink, statusCode) => {
   let urlPath = parse(pageLink);
   urlPath = urlPath.pathname;
-  urlPath = urlPath.replace(/\\|\//g, '');
+  urlPath = urlPath.replace(/\\|\//g, "");
 
   await page.screenshot({
     path: `./images/page-${urlPath}-status-${statusCode}.png`,
-    type: 'png',
-    fullPage: true,
+    type: "png",
+    fullPage: true
   });
 };
 
-
-const collectInternalLinks = ($) => {
+const getLinks = $ => {
   const relativeLinks = $("a[href^='/']");
-  console.log(`Found ${relativeLinks.length} relative links on page`);
+  console.log(
+    `Found ${relativeLinks.length} relative links and ${absoluteLinks.length} absolute links`
+  );
 
-  relativeLinks.each(function () {
-    pagesToVisit.push(baseUrl + $(this).attr('href'));
+  const absoluteLinks = $(`a[href^='${baseUrl}']`);
+
+  absoluteLinks.each(function() {
+    pagesToVisit.push($(this).attr("href"));
+  });
+
+  relativeLinks.each(function() {
+    baseUrl = `${url.protocol}//${url.hostname}`;
+    pagesToVisit.push(baseUrl + $(this).attr("href"));
   });
 };
 
-const visitPage = async (pageLink) => {
+const visitPage = async pageLink => {
   numPagesVisited += 1;
+
   if (pageLink) {
     const response = await page.goto(pageLink);
     if (response.status() !== 200) {
-      console.log('..do something extra');
+      console.log("..do something extra");
       await takeScreenshot(pageLink, response.status());
     }
     pagesVisited[pageLink] = response.status();
     const body = await page.content();
     const $ = cheerio.load(body);
-    collectInternalLinks($);
+    getLinks($);
     crawl();
   } else {
-    console.log('No Links Found OR found all links');
+    console.log("No Links Found OR found all links");
     console.log(pagesVisited);
     await browser.close();
   }
 };
 
-
 const crawl = async () => {
   if (numPagesVisited >= maxPagesToVisit) {
-    console.log('Reached max limit of number of pages to visit.');
+    console.log("Reached max limit of number of pages to visit.");
     await browser.close();
     console.log(pagesVisited);
     return;
   }
+
+  pagesToVisit = shuffle(pagesToVisit);
   const nextPage = pagesToVisit.pop();
+
   if (nextPage in pagesVisited) {
-    //this seems inefficient.. 
+    // this seems inefficient..
     crawl();
   } else {
     visitPage(nextPage);
   }
 };
-
 
 (async () => {
   browser = await puppeteer.launch();

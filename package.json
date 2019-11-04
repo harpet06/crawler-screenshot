@@ -13,6 +13,7 @@
     "cheerio": "^1.0.0-rc.3",
     "jest-puppeteer": "^4.3.0",
     "puppeteer": "^2.0.0",
+    "shuffle-array": "^1.0.1",
     "url-parse": "^1.4.7"
   },
   "devDependencies": {
