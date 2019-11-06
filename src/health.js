@@ -1,6 +1,6 @@
-const config = require("../config/index");
-const parse = require("url-parse");
-const fs = require("fs");
+const parse = require('url-parse');
+const fs = require('fs');
+const config = require('../config/index');
 
 const dir = config.pageHealth.imageDir;
 
@@ -11,85 +11,61 @@ if (!fs.existsSync(dir)) {
 const takeScreenshot = async (pageLink, statusCode, page) => {
   let urlPath = parse(pageLink);
   urlPath = urlPath.pathname;
-  urlPath = urlPath.replace(/\\|\//g, "");
+  urlPath = urlPath.replace(/\\|\//g, '');
 
   if (!urlPath) {
-    urlPath = "home";
+    urlPath = 'home';
   }
 
   await page.screenshot({
     path: `./images/page-${urlPath}-status-${statusCode}.png`,
-    type: "png",
-    fullPage: true
+    type: 'png',
+    fullPage: true,
   });
 };
 
 const getHealth = async (page, pageLink) => {
   let healthy = true;
-  let pageLoadTime;
+  let networkRequests = [];
 
-  // new stuff
-  let paused = false;
-  let pausedRequests = [];
-  let results = [];
-
-  const nextRequest = () => {
-    if (pausedRequests.length === 0) {
-      paused = false;
-    } else {
-      pausedRequests.shift()();
+  page.on('response', (response) => {
+    if (config.pageHealth.acceptableStatusCodes.includes(response.url())) {
+      networkRequests.push({
+        requestUrl: response.url(),
+        responseStatus: response.status(),
+      });
     }
-  };
-
-  await page.setRequestInterception(true);
-  page.on("request", request => {
-    if (paused) {
-      pausedRequests.push(() => request.continue());
-    } else {
-      paused = true;
-      request.continue();
-    }
-  });
-
-  page.on("requestfinished", async request => {
-    const response = await request.response();
-    const responseStatus = response.status();
-
-    const information = {
-      url: request.url(),
-      responseStatus: responseStatus
-    };
-
-    results.push(information);
-    nextRequest();
-  });
-
-  page.on("requestfailed", request => {
-    //if it fails do I care..?
-    nextRequest();
   });
 
   const response = await page.goto(pageLink, {
-    waitUntil: ["load", "networkidle2"]
+    waitUntil: ['load'],
   });
 
-  console.log(results);
+  page.removeAllListeners('response');
 
   if (!config.pageHealth.acceptableStatusCodes.includes(response.status())) {
     healthy = false;
     await takeScreenshot(pageLink, response.status(), page);
   }
-  const metrics = await page.metrics();
+  let metrics = 0;
+  metrics = await page.metrics();
+
   if (metrics.TaskDuration > config.pageHealth.maxPageLoadTime) {
     healthy = false;
   }
-  pageLoadTime = metrics.TaskDuration;
-  //page.removeListener("request");
+
+  const pageLoadTime = metrics.TaskDuration;
+
+  if (networkRequests.length === 0) {
+    networkRequests = 'All valid';
+  }
+
   return {
     statusCode: response.status(),
-    pageLoadTime: pageLoadTime,
-    healthy: healthy
+    pageLoadTime,
+    healthy,
+    networkRequests,
   };
 };
 
-module.exports = { getHealth: getHealth };
+module.exports = { getHealth };

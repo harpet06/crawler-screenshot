@@ -1,13 +1,13 @@
 const config = {
-  baseUrl: "http://kettlebell-coders-app.s3-website-eu-west-1.amazonaws.com/",
-  maxPagesToVisit: 1,
+  baseUrl: '',
+  maxPagesToVisit: 5,
   randomCrawl: true,
-  stickToBaseUrl: true, // foo.com/bar will only crawl foot.com/bar/baz
+  stickToBaseUrl: false, // foo.com/bar will only crawl foot.com/bar/baz
   pageHealth: {
     maxPageLoadTime: 0.900,
-    acceptableStatusCodes: [200, 301, 304],
-    imageDir: "./images"
-  }
+    acceptableStatusCodes: [200, 301, 304, 204],
+    imageDir: './images',
+  },
 };
 
 module.exports = config;
