@@ -155,7 +155,7 @@ const crawl = async () => {
 };
 
 (async () => {
-  browser = await puppeteer.launch();
+  browser = await puppeteer.launch({ args: ['--no-sandbox', '--disable-setuid-sandbox'], ignoreHTTPSErrors: true, dumpio: false });
   page = await browser.newPage();
   pagesToVisit.push(baseUrl);
   crawl();

@@ -45,7 +45,7 @@ const getHealth = async (page, pageLink) => {
   } else {
     previousPageUrl = page.url();
   }
-
+  
   const response = await page.goto(pageLink, {
     waitUntil: ["load"]
   });
