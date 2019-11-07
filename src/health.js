@@ -41,19 +41,24 @@ const getHealth = async (page, pageLink) => {
   let previousPageUrl;
 
   if (page.url() === "about:blank") {
-    previousPageUrl = false
+    previousPageUrl = false;
   } else {
     previousPageUrl = page.url();
   }
-  
+
   const response = await page.goto(pageLink, {
     waitUntil: ["load"]
   });
 
+  let pageStatus = response.status();
+  if (!pageStatus) {
+    pageStatus = 0;
+  }
+
   page.removeAllListeners("response");
 
-  if (!config.pageHealth.acceptableStatusCodes.includes(response.status())) {
-    await takeScreenshot(pageLink, response.status(), page);
+  if (!config.pageHealth.acceptableStatusCodes.includes(pageStatus)) {
+    await takeScreenshot(pageLink, pageStatus, page);
   }
   let metrics = 0;
   metrics = await page.metrics();
@@ -61,7 +66,7 @@ const getHealth = async (page, pageLink) => {
   const pageLoadTime = metrics.TaskDuration;
 
   return {
-    statusCode: response.status(),
+    statusCode: pageStatus,
     pageLoadTime,
     networkRequests,
     previousPageUrl
@@ -82,7 +87,10 @@ const isHealthy = (statusCode, pageLoadTime, networkRequests) => {
     unhealthyReason = unhealthyReason.concat(" page load time.");
   }
 
-  if (!Object.values(networkRequests).includes(acceptableStatusCodes) && networkRequests.length > 0) {
+  if (
+    !Object.values(networkRequests).includes(acceptableStatusCodes) &&
+    networkRequests.length > 0
+  ) {
     healthy = false;
     unhealthyReason = unhealthyReason.concat(" network requests.");
   }
