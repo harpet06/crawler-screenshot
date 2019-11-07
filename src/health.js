@@ -8,6 +8,8 @@ if (!fs.existsSync(dir)) {
   fs.mkdirSync(dir);
 }
 
+const { acceptableStatusCodes, maxPageLoadTime } = config.pageHealth;
+
 const takeScreenshot = async (pageLink, statusCode, page) => {
   let urlPath = parse(pageLink);
   urlPath = urlPath.pathname;
@@ -28,13 +30,21 @@ const getHealth = async (page, pageLink) => {
   let networkRequests = [];
 
   page.on("response", response => {
-    if (!config.pageHealth.acceptableStatusCodes.includes(response.status())) {
+    if (!acceptableStatusCodes.includes(response.status())) {
       networkRequests.push({
         requestUrl: response.url(),
         responseStatus: response.status()
       });
     }
   });
+
+  let previousPageUrl;
+
+  if (page.url() === "about:blank") {
+    previousPageUrl = false
+  } else {
+    previousPageUrl = page.url();
+  }
 
   const response = await page.goto(pageLink, {
     waitUntil: ["load"]
@@ -50,15 +60,34 @@ const getHealth = async (page, pageLink) => {
 
   const pageLoadTime = metrics.TaskDuration;
 
-  if (networkRequests.length === 0) {
-    networkRequests = "All network requests return acceptable status codes";
-  }
-
   return {
     statusCode: response.status(),
     pageLoadTime,
-    networkRequests
+    networkRequests,
+    previousPageUrl
   };
 };
 
-module.exports = { getHealth };
+const isHealthy = (statusCode, pageLoadTime, networkRequests) => {
+  let healthy = true;
+  let unhealthyReason = "";
+
+  if (!acceptableStatusCodes.includes(statusCode)) {
+    healthy = false;
+    unhealthyReason = unhealthyReason = "page status code";
+  }
+
+  if (pageLoadTime > maxPageLoadTime) {
+    healthy = false;
+    unhealthyReason = unhealthyReason.concat(" page load time.");
+  }
+
+  if (!Object.values(networkRequests).includes(acceptableStatusCodes) && networkRequests.length > 0) {
+    healthy = false;
+    unhealthyReason = unhealthyReason.concat(" network requests.");
+  }
+
+  return { healthy, unhealthyReason };
+};
+
+module.exports = { getHealth, isHealthy };

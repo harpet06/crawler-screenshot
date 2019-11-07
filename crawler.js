@@ -13,7 +13,7 @@ let numPagesVisited = 0;
 let pagesToVisit = [];
 const url = parse(baseUrl);
 const report = [];
-let realPageLoadTime = 0;
+let realPageLoadTimeCalculator = 0;
 let browser;
 let page;
 
@@ -67,26 +67,54 @@ const visitPage = async pageLink => {
   if (pageLink) {
     const response = await health.getHealth(page, pageLink);
 
-    const { networkRequests } = response;
+    let {
+      networkRequests,
+      statusCode,
+      pageLoadTime,
+      previousPageUrl
+    } = response;
     // this shouldn't happen here..
+
+    //networkRequests = JSON.stringify(networkRequests);
 
     let pageDetail;
     if (report.length === 0) {
-      pageDetail = {
-        url: pageLink,
-        statusCode: response.statusCode,
-        loadTime: response.pageLoadTime,
+      const { healthy, unhealthyReason } = health.isHealthy(
+        statusCode,
+        pageLoadTime,
         networkRequests
+      );
+
+      pageDetail = {
+        currentUrl: pageLink,
+        clickedFrom: previousPageUrl,
+        statusCode: statusCode,
+        loadTime: pageLoadTime,
+        networkRequests,
+        pageHealthy: healthy,
+        unhealthyReason: unhealthyReason
       };
     } else {
       // this code block exists due to https://github.com/GoogleChrome/puppeteer/issues/2513
       const lastResult = report[report.length - 1];
-      realPageLoadTime = realPageLoadTime + lastResult.loadTime;
-      pageDetail = {
-        url: pageLink,
-        statusCode: response.statusCode,
-        loadTime: response.pageLoadTime - realPageLoadTime,
+      realPageLoadTimeCalculator =
+        realPageLoadTimeCalculator + lastResult.loadTime;
+
+      let realPageLoadTime = pageLoadTime - realPageLoadTimeCalculator;
+      
+      const { healthy, unhealthyReason } = health.isHealthy(
+        statusCode,
+        realPageLoadTime,
         networkRequests
+      );
+      pageDetail = {
+        currentUrl: pageLink,
+        clickedFrom: previousPageUrl,
+        statusCode: statusCode,
+        loadTime: realPageLoadTime,
+        networkRequests,
+        pageHealthy: healthy,
+        unhealthyReason: unhealthyReason
       };
     }
 
