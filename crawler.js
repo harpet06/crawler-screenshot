@@ -4,6 +4,7 @@ const puppeteer = require("puppeteer");
 const shuffle = require("shuffle-array");
 const config = require("./config/index");
 const health = require("./src/health");
+const reportGen = require("./src/report");
 
 let { baseUrl } = config;
 const { maxPagesToVisit, stickToBaseUrl } = config;
@@ -61,6 +62,8 @@ const getLinks = $ => {
 
 const visitPage = async pageLink => {
   numPagesVisited += 1;
+
+  console.log(`Crawling page ${numPagesVisited} of ${maxPagesToVisit}`)
 
   if (pageLink) {
     const response = await health.getHealth(page, pageLink);
@@ -126,7 +129,7 @@ const visitPage = async pageLink => {
     crawl();
   } else {
     console.log("No Links Found OR found all links");
-    console.log(report);
+    reportGen.generateReport(report);
     await browser.close();
   }
 };
@@ -135,7 +138,8 @@ const crawl = async () => {
   if (numPagesVisited >= maxPagesToVisit) {
     console.log("Reached max limit of number of pages to visit.");
     await browser.close();
-    console.log(report);
+    reportGen.generateReport(report);
+
     return;
   }
 
@@ -144,8 +148,6 @@ const crawl = async () => {
   }
 
   const nextPage = pagesToVisit.pop();
-  // console.log("This is pages to visit " + pagesToVisit);
-  // console.log("this is visited pages : " + pagesVisited);
   if (pagesVisited.includes(nextPage)) {
     crawl();
   } else {
@@ -153,7 +155,7 @@ const crawl = async () => {
   }
 };
 
-(async () => {
+const runCrawl = async () => {
   browser = await puppeteer.launch({
     args: ["--no-sandbox", "--disable-setuid-sandbox"],
     ignoreHTTPSErrors: true,
@@ -162,4 +164,6 @@ const crawl = async () => {
   page = await browser.newPage();
   pagesToVisit.push(baseUrl);
   crawl();
-})();
+};
+
+runCrawl(); 
