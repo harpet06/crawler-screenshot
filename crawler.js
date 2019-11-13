@@ -6,7 +6,7 @@ const config = require("./config/index");
 const health = require("./src/health");
 
 let { baseUrl } = config;
-const { maxPagesToVisit } = config;
+const { maxPagesToVisit, stickToBaseUrl } = config;
 
 const pagesVisited = [];
 let numPagesVisited = 0;
@@ -29,7 +29,7 @@ const getLinks = $ => {
   const absoluteLinks = $(`a[href^='${baseUrl}']`);
 
   absoluteLinks.each(function() {
-    if (config.stickToBaseUrl) {
+    if (stickToBaseUrl === "true") {
       if (
         $(this)
           .attr("href")
@@ -43,11 +43,11 @@ const getLinks = $ => {
   });
 
   relativeLinks.each(function() {
-    if (config.stickToBaseUrl) {
+    if (stickToBaseUrl === "true") {
       if (
         $(this)
           .attr("href")
-          .includes(baseUrl)
+          .includes(url.pathname)
       ) {
         baseUrl = `${url.protocol}//${url.hostname}`;
         pagesToVisit.push(baseUrl + $(this).attr("href"));
@@ -57,8 +57,6 @@ const getLinks = $ => {
       pagesToVisit.push(baseUrl + $(this).attr("href"));
     }
   });
-
-  console.log(`Found ${pagesToVisit.length} links`);
 };
 
 const visitPage = async pageLink => {
@@ -101,7 +99,7 @@ const visitPage = async pageLink => {
         realPageLoadTimeCalculator + lastResult.loadTime;
 
       let realPageLoadTime = pageLoadTime - realPageLoadTimeCalculator;
-      
+
       const { healthy, unhealthyReason } = health.isHealthy(
         statusCode,
         realPageLoadTime,
@@ -141,12 +139,13 @@ const crawl = async () => {
     return;
   }
 
-  if (config.randomCrawl) {
+  if (config.randomCrawl === "true") {
     pagesToVisit = shuffle(pagesToVisit);
   }
 
   const nextPage = pagesToVisit.pop();
-
+  // console.log("This is pages to visit " + pagesToVisit);
+  // console.log("this is visited pages : " + pagesVisited);
   if (pagesVisited.includes(nextPage)) {
     crawl();
   } else {
@@ -155,7 +154,11 @@ const crawl = async () => {
 };
 
 (async () => {
-  browser = await puppeteer.launch({ args: ['--no-sandbox', '--disable-setuid-sandbox'], ignoreHTTPSErrors: true, dumpio: false });
+  browser = await puppeteer.launch({
+    args: ["--no-sandbox", "--disable-setuid-sandbox"],
+    ignoreHTTPSErrors: true,
+    dumpio: false
+  });
   page = await browser.newPage();
   pagesToVisit.push(baseUrl);
   crawl();
