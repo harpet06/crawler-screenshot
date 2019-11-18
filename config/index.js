@@ -1,8 +1,9 @@
 const config = {
-  baseUrl: "",
-  maxPagesToVisit: 2,
+  baseUrl: "https://www.bbc.co.uk/",
+  maxPagesToVisit: 5,
   randomCrawl: true,
-  stickToBaseUrl: false, // foo.com/bar will only crawl foot.com/bar/baz
+  stickToBaseUrl: true, // foo.com/bar will only crawl foot.com/bar/baz
+  reportDir: "./report",
   pageHealth: {
     maxPageLoadTime: 1.0,
     acceptableStatusCodes: [200, 301, 304, 204],
