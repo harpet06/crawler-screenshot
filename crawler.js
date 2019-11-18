@@ -6,13 +6,12 @@ const config = require("./config/index");
 const health = require("./src/health");
 const reportGen = require("./src/report");
 
-let { baseUrl } = config;
-const { maxPagesToVisit, stickToBaseUrl } = config;
+let { baseUrl, maxPagesToVisit, stickToBaseUrl, randomCrawl } = config;
 
 const pagesVisited = [];
 let numPagesVisited = 0;
 let pagesToVisit = [];
-const url = parse(baseUrl);
+let url = parse(baseUrl);
 const report = [];
 let realPageLoadTimeCalculator = 0;
 let browser;
@@ -140,7 +139,7 @@ const crawl = async () => {
     return reportCreated;
   }
 
-  if (config.randomCrawl === "true") {
+  if (randomCrawl === "true") {
     pagesToVisit = shuffle(pagesToVisit);
   }
 
@@ -152,7 +151,19 @@ const crawl = async () => {
   }
 };
 
-const runCrawl = async () => {
+const runCrawl = async (
+  crawlUrl,
+  crawlMaxPagesToVisit,
+  crawlRandomCrawl,
+  crawlStickToBaseUrl
+) => {
+  baseUrl = crawlUrl;
+  maxPagesToVisit = crawlMaxPagesToVisit;
+  randomCrawl = crawlRandomCrawl;
+  stickToBaseUrl = crawlStickToBaseUrl;
+  url = parse(baseUrl);
+  
+
   browser = await puppeteer.launch({
     args: ["--no-sandbox", "--disable-setuid-sandbox"],
     ignoreHTTPSErrors: true,
@@ -161,7 +172,10 @@ const runCrawl = async () => {
   page = await browser.newPage();
   pagesToVisit.push(baseUrl);
   let reportPath = await crawl();
-  return reportPath; 
+  numPagesVisited = 0;
+  pagesToVisit = [];
+
+  return reportPath;
 };
 
 module.exports = { runCrawl };

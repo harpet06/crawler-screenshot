@@ -20,7 +20,6 @@ const generateReport = reportData => {
     }
   );
 
-  console.log(`./${reportDir}/report-${fileName}.JSON`);
   const reportName = `/${reportDir}/report-${fileName}.JSON`
   return reportName;
 };
