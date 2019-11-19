@@ -1,9 +1,12 @@
 const express = require("express");
 const crawl = require("./crawler");
 const app = express();
-const port = 3000;
 const fs = require("fs");
-var path = require("path");
+const path = require("path");
+const queue = require("express-queue");
+const port = 5000;
+
+app.use(queue({ activeLimit: 1, queuedLimit: -1 }));
 
 app.get("/", (req, res) => res.send("Hello World!"));
 

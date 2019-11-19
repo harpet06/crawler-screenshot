@@ -8,11 +8,11 @@ const reportGen = require("./src/report");
 
 let { baseUrl, maxPagesToVisit, stickToBaseUrl, randomCrawl } = config;
 
-const pagesVisited = [];
+let pagesVisited = [];
 let numPagesVisited = 0;
 let pagesToVisit = [];
 let url = parse(baseUrl);
-const report = [];
+let report = [];
 let realPageLoadTimeCalculator = 0;
 let browser;
 let page;
@@ -151,6 +151,14 @@ const crawl = async () => {
   }
 };
 
+const resetSetup = () => {
+  numPagesVisited = 0;
+  pagesToVisit = [];
+  pagesVisited = [];
+  report = [];
+  realPageLoadTimeCalculator = 0;
+};
+
 const runCrawl = async (
   crawlUrl,
   crawlMaxPagesToVisit,
@@ -162,7 +170,6 @@ const runCrawl = async (
   randomCrawl = crawlRandomCrawl;
   stickToBaseUrl = crawlStickToBaseUrl;
   url = parse(baseUrl);
-  
 
   browser = await puppeteer.launch({
     args: ["--no-sandbox", "--disable-setuid-sandbox"],
@@ -172,9 +179,7 @@ const runCrawl = async (
   page = await browser.newPage();
   pagesToVisit.push(baseUrl);
   let reportPath = await crawl();
-  numPagesVisited = 0;
-  pagesToVisit = [];
-
+  resetSetup();
   return reportPath;
 };
 
