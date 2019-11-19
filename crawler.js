@@ -6,14 +6,13 @@ const config = require("./config/index");
 const health = require("./src/health");
 const reportGen = require("./src/report");
 
-let { baseUrl } = config;
-const { maxPagesToVisit, stickToBaseUrl } = config;
+let { baseUrl, maxPagesToVisit, stickToBaseUrl, randomCrawl } = config;
 
-const pagesVisited = [];
+let pagesVisited = [];
 let numPagesVisited = 0;
 let pagesToVisit = [];
-const url = parse(baseUrl);
-const report = [];
+let url = parse(baseUrl);
+let report = [];
 let realPageLoadTimeCalculator = 0;
 let browser;
 let page;
@@ -63,7 +62,7 @@ const getLinks = $ => {
 const visitPage = async pageLink => {
   numPagesVisited += 1;
 
-  console.log(`Crawling page ${numPagesVisited} of ${maxPagesToVisit}`)
+  console.log(`Crawling page ${numPagesVisited} of ${maxPagesToVisit}`);
 
   if (pageLink) {
     const response = await health.getHealth(page, pageLink);
@@ -74,9 +73,6 @@ const visitPage = async pageLink => {
       pageLoadTime,
       previousPageUrl
     } = response;
-    // this shouldn't happen here..
-
-    //networkRequests = JSON.stringify(networkRequests);
 
     let pageDetail;
     if (report.length === 0) {
@@ -126,11 +122,11 @@ const visitPage = async pageLink => {
     const body = await page.content();
     const $ = cheerio.load(body);
     getLinks($);
-    crawl();
+    return crawl();
   } else {
     console.log("No Links Found OR found all links");
-    reportGen.generateReport(report);
     await browser.close();
+    return reportGen.generateReport(report);
   }
 };
 
@@ -138,24 +134,43 @@ const crawl = async () => {
   if (numPagesVisited >= maxPagesToVisit) {
     console.log("Reached max limit of number of pages to visit.");
     await browser.close();
-    reportGen.generateReport(report);
-
-    return;
+    const reportCreated = reportGen.generateReport(report);
+    console.log(reportCreated);
+    return reportCreated;
   }
 
-  if (config.randomCrawl === "true") {
+  if (randomCrawl === "true") {
     pagesToVisit = shuffle(pagesToVisit);
   }
 
   const nextPage = pagesToVisit.pop();
   if (pagesVisited.includes(nextPage)) {
-    crawl();
+    return crawl();
   } else {
-    visitPage(nextPage);
+    return visitPage(nextPage);
   }
 };
 
-const runCrawl = async () => {
+const resetSetup = () => {
+  numPagesVisited = 0;
+  pagesToVisit = [];
+  pagesVisited = [];
+  report = [];
+  realPageLoadTimeCalculator = 0;
+};
+
+const runCrawl = async (
+  crawlUrl,
+  crawlMaxPagesToVisit,
+  crawlRandomCrawl,
+  crawlStickToBaseUrl
+) => {
+  baseUrl = crawlUrl;
+  maxPagesToVisit = crawlMaxPagesToVisit;
+  randomCrawl = crawlRandomCrawl;
+  stickToBaseUrl = crawlStickToBaseUrl;
+  url = parse(baseUrl);
+
   browser = await puppeteer.launch({
     args: ["--no-sandbox", "--disable-setuid-sandbox"],
     ignoreHTTPSErrors: true,
@@ -163,7 +178,9 @@ const runCrawl = async () => {
   });
   page = await browser.newPage();
   pagesToVisit.push(baseUrl);
-  crawl();
+  let reportPath = await crawl();
+  resetSetup();
+  return reportPath;
 };
 
-runCrawl(); 
+module.exports = { runCrawl };
